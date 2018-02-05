@@ -15,6 +15,7 @@
 
 
 import Reticulum from '../Reticulum/src/Reticulum';
+import ReticleUtil from '../Reticulum/src/ReticleUtil';
 import { Line } from '../../three.js/src/objects/Line';
 import { BufferGeometry } from '../../three.js/src/core/BufferGeometry';
 import { LineBasicMaterial } from '../../three.js/src/materials/LineBasicMaterial';
@@ -45,15 +46,30 @@ export default class VRControls extends Reticulum {
         this.scene.add(this.controller);
         this.controller.standingMatrix = this.renderer.vr.getStandingMatrix();
         this.controller.head = this.camera;
-        const laserLine = new Line(new BufferGeometry(), new LineBasicMaterial({
-            linewidth: 1
-        }));
+
+
+		const lineMaterial = ReticleUtil.createShaderMaterial(0xffffff, 1, false),
+		laserLine = new Line(new BufferGeometry(), lineMaterial);
+       // const laserLine = new Line(new BufferGeometry(), new LineBasicMaterial({
+       //     linewidth: 1
+       // }));
+       	lineMaterial.linewidth = 1;
         laserLine.geometry.addAttribute('position', new Float32BufferAttribute([0, 0, 0, 0, 0, -10], 3));
         laserLine.name = 'line';
         laserLine.visible = false;
         this.controller.add(laserLine);
+
+        const geometry = new THREE.CircleBufferGeometry( 1, 32 ),
+        material = THREE.ReticleUtil.createMorphShaderMaterial(0xffffff, 1, false),
+        mesh = new THREE.Mesh(geometry, material);
+
+        mesh.scale.set(0.01, 0.01, 0.01);
+        mesh.position.z = -5;
+
+        laserLine.add(mesh);
+
         this.updateMethod = this.updateVRController;
-        this.dispatchEvent("connected", this.controller);
+        this.dispatchEvent({ type: "connected"}, this.controller);
         this.controller.addEventListener('primary press began', (event) => this.onControllerPress(event));
         this.controller.addEventListener('primary press ended', (event) => this.onControllerPressEnd(event));
         this.controller.addEventListener('disconnected',  (event) => this.onControllerDisconnected(event));
@@ -66,13 +82,16 @@ export default class VRControls extends Reticulum {
     }
 
     onControllerPress(event) {
+
+
         if (this.controller.userData.selected !== undefined) {
             const object = this.controller.userData.selected;
             if (object.onGazeClick != null) {
                 object.onGazeClick(object);
             }
         } else {
-            this.dispatchEvent("click");
+ 
+            this.dispatchEvent({ type: "click" });
         }
     }
     onControllerPressEnd(event) {
@@ -81,7 +100,7 @@ export default class VRControls extends Reticulum {
             if (object.onGazeOut != null) {
                 object.onGazeOut(object);
             }
-            //object.material.color.setHex( this.controller.userData.currentHex);
+            
             this.controller.userData.selected = undefined;
         }
     }
@@ -115,10 +134,8 @@ export default class VRControls extends Reticulum {
                 const intersection = intersections[0],
                     object = intersection.object,
                     line = this.controller.getObjectByName('line');
-                console.log(object);
-                //controller.userData.currentHex = object.material.color.getHex();
-                //object.material.emissive.r = 1;
-                //object.material.color.setHex(0x999999);
+        
+                object.point = intersection.point;
                 this.controller.userData.selected = object;
 
                 if (object.onGazeOver != null) {
@@ -131,8 +148,8 @@ export default class VRControls extends Reticulum {
             }
         } else {
             if (this.controller.userData.selected) {
-                //controller.userData.selected.material.color.setHex(controller.userData.currentHex);
-                const object = controller.userData.selected;
+               
+                const object = this.controller.userData.selected;
 
                 if (object.onGazeOut != null ) {
           			object.onGazeOut(object);
