@@ -26,11 +26,10 @@ import VRControlsUtils from './VRControlsUtils';
 
 export default class VRControls extends Reticulum {
     
-    constructor(camera, scene, renderer, options) {
+    constructor(camera, renderer, options) {
         options.isClickEnabled = false;
         super(camera, options);
         this.renderer = renderer,
-        this.scene = scene,
         this.tempMatrix = new Matrix4(),
 
         //default distance of the raycaster marker
@@ -77,11 +76,13 @@ export default class VRControls extends Reticulum {
      */
     initController(event) { 
         this.controller = event.detail;
-        this.scene.add(this.controller);
+       // this.scene.add(this.controller);
         
         //these might need to be selected on type of controller
         this.controller.standingMatrix = this.renderer.vr.getStandingMatrix();
         this.controller.head = this.camera;
+
+        this.showRecticle = false;
         
         this.dispatchEvent({ type: "connected"}, this.controller);
 
