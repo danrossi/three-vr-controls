@@ -122,6 +122,8 @@ export default class VRControls extends Reticulum {
         const lineMaterial = VRControlsUtils.createLineShaderMaterial(0xffffff),
         laserLine = this.laserLine = new Line(new BufferGeometry(), lineMaterial);
 
+        laserLine.material.linewidth = 4;
+        
         laserLine.geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( [ 0, 0, 0, 0, 0, -this.defaultMarkerDistance ], 3 ) );
         laserLine.name = 'line';
         laserLine.visible = false;
