@@ -27,7 +27,7 @@ import VRControlsUtils from './VRControlsUtils';
 export default class VRControls extends Reticulum {
     
     constructor(camera, renderer, options) {
-        options.isClickEnabled = false;
+        //options.isClickEnabled = false;
         super(camera, options);
         this.renderer = renderer,
         this.tempMatrix = new Matrix4(),
@@ -38,6 +38,10 @@ export default class VRControls extends Reticulum {
         //default scale of raycaster marker to be used to re-calculate scale
         this.defaultMarkerScale = options.defaultMarkerScale || 0.07,
         this.updateMethod = this.updateReticle;
+
+        //initialise reticle click events which will change to vr controller events when connected. 
+        this.vrSetupEventsMethod = this.setupReticleEvents;
+        this.vrCancelEventsMethod = this.cancelReticleEvents;
 
          //default scale fraction
         this.scaleFraction = this.defaultMarkerScale / this.defaultMarkerDistance;
@@ -62,11 +66,55 @@ export default class VRControls extends Reticulum {
 
         //change update method to vr controller instead of reticle
         this.updateMethod = this.updateVRController;
-        
+
+        //change to VR controller events on connection.
+        this.vrSetupEventsMethod = this.setupVRControllerEvent;
+        this.vrCancelEventsMethod = this.cancelVRControllerEvent;
+            
+        //disconnect reticle events
+        this.cancelReticleEvents();
+
+        //setup VR controller events
+        this.setupVRControllerEvents();
+    }
+
+    /**
+     * Setup VR Controller press and disconnected events
+     */
+    setupVRControllerEvents() {
         //setup vr controller events
         this.controller.addEventListener('primary press began', (event) => this.onControllerPress(event));
         this.controller.addEventListener('primary press ended', (event) => this.onControllerPressEnd(event));
         this.controller.addEventListener('disconnected',  (event) => this.onControllerDisconnected(event));
+    }
+
+    /**
+     * Cancel VR Controller press and disconnected events
+     */
+    cancelVRControllerEvents() {
+        //setup vr controller events
+        this.controller.removeEventListener('primary press began', (event) => this.onControllerPress(event));
+        this.controller.removeEventListener('primary press ended', (event) => this.onControllerPressEnd(event));
+        this.controller.removeEventListener('disconnected',  (event) => this.onControllerDisconnected(event));
+    }
+
+    /**
+     * Setup reticle click events for hiding / showing VR controls and controller
+     */
+    setupReticleEvents() {
+
+        this.onVRElementClickRef = () => {
+            this.onVRClick();
+        };
+
+        this.renderer.domElement.addEventListener("click", this.onVRElementClickRef);
+    }
+
+    /**
+     * Cancel reticle events
+     */
+    cancelReticleEvents() {
+        this.renderer.domElement.removeEventListener("click", this.onVRElementClickRef);
     }
 
     /**
@@ -91,6 +139,7 @@ export default class VRControls extends Reticulum {
 
         //create the marker
         this.createMarker();
+
     }
 
     /**
@@ -136,7 +185,11 @@ export default class VRControls extends Reticulum {
     onControllerDisconnected(event) {
     	this.controller.parent.remove( this.controller );
     	this.controller = null;
+
+        //return to reticle and reticle events on disconnection.
     	this.updateMethod = super.update;
+        this.vrSetupEventsMethod = this.setupReticleEvents;
+        this.vrCancelEventsMethod = this.cancelReticleEvents;
     }
 
     /**
@@ -153,7 +206,8 @@ export default class VRControls extends Reticulum {
         } else {
             //clicking outside of a raycaster selection
             //useful to hiding / showing ui
-            this.dispatchEvent({ type: "click" });
+            //this.dispatchEvent({ type: "click" });
+            this.onVRClick();
         }
     }
 
@@ -169,6 +223,13 @@ export default class VRControls extends Reticulum {
             
             this.controller.userData.selected = undefined;
         }
+    }
+
+    /**
+     * On renderer element click
+     */
+    onVRClick(event) {
+        this.dispatchEvent({ type: "click" });
     }
 
     /**
@@ -259,6 +320,9 @@ export default class VRControls extends Reticulum {
         laserMarker.scale.x = laserMarker.scale.y = scale;
     }
 
+    /**
+     * Change the marker distance to the raycaster object or default distance
+     */
     updateMarkerDistance(distance) {
         this.laserMarker.position.z = distance;
     }
@@ -324,5 +388,17 @@ export default class VRControls extends Reticulum {
         } else {
             this.showRecticle = value;
         }
+    }
+
+    start() {
+        try {
+            this.vrSetupEventsMethod();
+        } catch (e) {}
+    }
+
+    stop() {
+        try {
+            this.vrCancelEventsMethod();
+        } catch (e) {}
     }
 }
