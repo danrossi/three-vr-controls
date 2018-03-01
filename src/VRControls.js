@@ -57,45 +57,30 @@ export default class VRControls extends Reticulum {
     }
 
     /**
-     * VR Controller connecected event
-     */
-    onControllerConnected(event) {
-        
-        //initiate the controller
-        this.initController(event);
-
-        //change update method to vr controller instead of reticle
-        this.updateMethod = this.updateVRController;
-
-        //change to VR controller events on connection.
-        this.vrSetupEventsMethod = this.setupVRControllerEvent;
-        this.vrCancelEventsMethod = this.cancelVRControllerEvent;
-            
-        //disconnect reticle events
-        this.cancelReticleEvents();
-
-        //setup VR controller events
-        this.setupVRControllerEvents();
-    }
-
-    /**
      * Setup VR Controller press and disconnected events
      */
     setupVRControllerEvents() {
+        this.onControllerPressRef = (event) => this.onControllerPress(event);
+        this.onControllerPressEndRef = (event) => this.onControllerPressEnd(event);
+        this.onControllerDisconnectedRef = (event) => this.onControllerDisconnected(event);
         //setup vr controller events
-        this.controller.addEventListener('primary press began', (event) => this.onControllerPress(event));
-        this.controller.addEventListener('primary press ended', (event) => this.onControllerPressEnd(event));
-        this.controller.addEventListener('disconnected',  (event) => this.onControllerDisconnected(event));
+        this.controller.addEventListener('primary press began', this.onControllerPressRef);
+        this.controller.addEventListener('primary press ended', this.onControllerPressEndRef);
+        this.controller.addEventListener('disconnected',  this.onControllerDisconnectedRef);
     }
 
     /**
      * Cancel VR Controller press and disconnected events
      */
     cancelVRControllerEvents() {
+
+        
         //setup vr controller events
-        this.controller.removeEventListener('primary press began', (event) => this.onControllerPress(event));
-        this.controller.removeEventListener('primary press ended', (event) => this.onControllerPressEnd(event));
-        this.controller.removeEventListener('disconnected',  (event) => this.onControllerDisconnected(event));
+        this.controller.removeEventListener('primary press began', this.onControllerPressRef);
+        this.controller.removeEventListener('primary press ended', this.onControllerPressEndRef);
+        this.controller.removeEventListener('disconnected',  this.onControllerDisconnectedRef);
+        
+        THREE.VRController.onGamepadDisconnectAll();
     }
 
     /**
@@ -180,23 +165,55 @@ export default class VRControls extends Reticulum {
     }
 
     /**
+     * VR Controller connecected event
+     */
+    onControllerConnected(event) {
+
+        //initiate the controller
+        this.initController(event);
+
+        //change update method to vr controller instead of reticle
+        this.updateMethod = this.updateVRController;
+
+        //change to VR controller events on connection.
+        this.vrSetupEventsMethod = this.setupVRControllerEvents;
+        this.vrCancelEventsMethod = this.cancelVRControllerEvents;
+            
+        //disconnect reticle events
+        this.cancelReticleEvents();
+
+        //setup VR controller events
+        this.setupVRControllerEvents();
+    }
+
+
+    /**
      * On controller disconnect return to the reticulum controls
      */
     onControllerDisconnected(event) {
-    	this.controller.parent.remove( this.controller );
-    	this.controller = null;
+
+       // this.dispatchEvent({ type: "disconnected"}, this.controller);
+
+       this.cancelVRControllerEvents();
 
         //return to reticle and reticle events on disconnection.
-    	this.updateMethod = super.update;
+        this.updateMethod = super.update;
         this.vrSetupEventsMethod = this.setupReticleEvents;
         this.vrCancelEventsMethod = this.cancelReticleEvents;
+
+
+        
+
+    	this.controller.parent.remove( this.controller );
+    	//this.controller = null;
+
+       
     }
 
     /**
      * On VR controller button press
      */
     onControllerPress(event) {
-
 
         if (this.controller.userData.selected !== undefined) {
             const object = this.controller.userData.selected;
