@@ -80,7 +80,7 @@ export default class VRControls extends Reticulum {
         this.controller.removeEventListener('primary press ended', this.onControllerPressEndRef);
         this.controller.removeEventListener('disconnected',  this.onControllerDisconnectedRef);
         
-        THREE.VRController.onGamepadDisconnectAll();
+        //THREE.VRController.onGamepadDisconnectAll();
     }
 
     /**
@@ -204,7 +204,7 @@ export default class VRControls extends Reticulum {
 
         
 
-    	this.controller.parent.remove( this.controller );
+    	if (this.controller.parent) this.controller.parent.remove( this.controller );
     	//this.controller = null;
 
        
