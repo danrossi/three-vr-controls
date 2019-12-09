@@ -45,6 +45,8 @@ export default class VRControls extends Reticulum {
 
          //default scale fraction
         this.scaleFraction = this.defaultMarkerScale / this.defaultMarkerDistance;
+
+
     }
 
     /**
@@ -52,8 +54,16 @@ export default class VRControls extends Reticulum {
      */
     initiate(camera, options) {
         super.initiate(camera, options);
-        window.addEventListener('vr controller connected', (e) => this.onControllerConnected(e));
-    	window.addEventListener('vr controller disconnected', (e) => this.onControllerDisconnected(e));
+
+        this.createController();
+    }
+
+    createController() {
+        this.controller = this.renderer.xr.getController( 0 );
+
+        this.onControllerConnectedRef = () => this.onControllerConnected();
+
+        this.controller.addEventListener( 'select', this.onControllerConnectedRef);
     }
 
     /**
@@ -64,9 +74,9 @@ export default class VRControls extends Reticulum {
         this.onControllerPressEndRef = (event) => this.onControllerPressEnd(event);
         this.onControllerDisconnectedRef = (event) => this.onControllerDisconnected(event);
         //setup vr controller events
-        this.controller.addEventListener('primary press began', this.onControllerPressRef);
-        this.controller.addEventListener('primary press ended', this.onControllerPressEndRef);
-        this.controller.addEventListener('disconnected',  this.onControllerDisconnectedRef);
+        this.controller.addEventListener('selectstart', this.onControllerPressRef);
+        this.controller.addEventListener('selectend', this.onControllerPressEndRef);
+        this.controller.addEventListener('sessionend',  this.onControllerDisconnectedRef);
     }
 
     /**
@@ -76,9 +86,9 @@ export default class VRControls extends Reticulum {
 
         
         //setup vr controller events
-        this.controller.removeEventListener('primary press began', this.onControllerPressRef);
-        this.controller.removeEventListener('primary press ended', this.onControllerPressEndRef);
-        this.controller.removeEventListener('disconnected',  this.onControllerDisconnectedRef);
+        this.controller.removeEventListener('selectstart', this.onControllerPressRef);
+        this.controller.removeEventListener('selectend', this.onControllerPressEndRef);
+        this.controller.removeEventListener('sessionend',  this.onControllerDisconnectedRef);
         
         //THREE.VRController.onGamepadDisconnectAll();
     }
@@ -108,12 +118,12 @@ export default class VRControls extends Reticulum {
      * Adds a laser line and marker pointer
      */
     initController(event) { 
-        this.controller = event.detail;
+        //this.controller = event.detail;
        // this.scene.add(this.controller);
         
         //these might need to be selected on type of controller
-        this.controller.standingMatrix = this.renderer.vr.getStandingMatrix();
-        this.controller.head = this.camera;
+       // this.controller.standingMatrix = this.renderer.vr.getStandingMatrix();
+        //this.controller.head = this.camera;
 
         this.showRecticle = false;
         
@@ -167,10 +177,10 @@ export default class VRControls extends Reticulum {
     /**
      * VR Controller connecected event
      */
-    onControllerConnected(event) {
+    onControllerConnected() {
 
         //initiate the controller
-        this.initController(event);
+        this.initController();
 
         //change update method to vr controller instead of reticle
         this.updateMethod = this.updateVRController;
@@ -184,6 +194,8 @@ export default class VRControls extends Reticulum {
 
         //setup VR controller events
         this.setupVRControllerEvents();
+
+        this.controller.removeEventListener( 'select', this.onControllerConnectedRef);
     }
 
 
@@ -202,12 +214,10 @@ export default class VRControls extends Reticulum {
         this.vrCancelEventsMethod = this.cancelReticleEvents;
 
 
-        
-
     	if (this.controller.parent) this.controller.parent.remove( this.controller );
     	//this.controller = null;
 
-       
+        this.controller.removeEventListener( 'select', this.onControllerConnectedRef);       
     }
 
     /**
@@ -375,7 +385,7 @@ export default class VRControls extends Reticulum {
      * Update the VR Controller
      */
     updateVRController() {
-        THREE.VRController.update()
+        //THREE.VRController.update()
         this.intersectObjects();
     }
 
@@ -383,7 +393,7 @@ export default class VRControls extends Reticulum {
      * Not in VR mode update the reticle instead
      */
     updateReticle() {
-    	THREE.VRController.update();
+    	//THREE.VRController.update();
     	super.update();
     }
 
